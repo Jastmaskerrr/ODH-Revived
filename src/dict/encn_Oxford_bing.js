@@ -1,5 +1,5 @@
 /* global api */
-class encn_Oxford {
+class encn_Oxford_bing {
     constructor(options) {
         this.options = options;
         this.maxexample = 2;

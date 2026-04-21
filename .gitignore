@@ -17,9 +17,13 @@
 # Web store zip
 *.zip
 *.json
+.amo-upload-uuid
 
 # JS Beautify
 .jsbeautifyrc
 
 # for Mac
 .DS_Store
+
+/.agents
+src/bg/data/

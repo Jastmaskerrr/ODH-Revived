@@ -16,6 +16,10 @@
     "lblEnabled": { "message": "开关插件" },
     "lblMouseselection": { "message": "启用鼠标" },
     "lblHotkey": { "message": "取词热键" },
+    "lblTheme": { "message": "界面主题" },
+    "selThemeSystem": { "message": "跟随系统" },
+    "selThemeLight": { "message": "浅色模式" },
+    "selThemeDark": { "message": "深色模式" },
     "lblCurrentDict": { "message": "词典名称" },
     "lblLingualType": { "message": "单语双语" },
     "selMonolingual": { "message": "单语" },
@@ -25,6 +29,9 @@
     "lblAudioPref": { "message": "音频偏好" },
     "lblAudioPref0": { "message": "英音" },
     "lblAudioPref1": { "message": "美音" },
+    "lblMaxWords": { "message": "选词数量" },
+    "selUnlimited": { "message": "不限" },
+    "lblShowToast": { "message": "制卡提示" },
 
 
     "lblServices": { "message": "数据导出" },
@@ -32,6 +39,8 @@
     "lblPassword": { "message": "用户密码" },
     "lblSignup": { "message": "注册" },
     "lblSignin": { "message": "登录" },
+    "lblAnkiconnecturl": { "message": "连接地址" },
+    "lblConnect": { "message": "连接" },
 
     "msgConnecting": { "message": "连接中..." },
     "msgFailed": { "message": "未连接" },
@@ -100,5 +109,17 @@
     "fren_Collins": { "message": "柯林斯法英词典" },
     "rucn_Qianyi": { "message": "千亿俄汉词典" },
 
-    "labelAlignment": { "message": "center" }
+    "labelAlignment": { "message": "center" },
+
+    "tabSiteRulesTitle": { "message": "网站规则" },
+    "grpSiteRules": { "message": "网站规则" },
+    "btnAddRule": { "message": "+ 添加规则" },
+    "grpSiteRuleEditor": { "message": "规则编辑器" },
+    "lblRuleDomain": { "message": "域名" },
+    "btnSaveRule": { "message": "保存" },
+    "btnEdit": { "message": "编辑" },
+    "btnDelete": { "message": "删除" },
+    "msgNoRules": { "message": "尚未定义网站规则。" },
+    "btnImportRules": { "message": "导入" },
+    "btnExportRules": { "message": "导出" }
 }

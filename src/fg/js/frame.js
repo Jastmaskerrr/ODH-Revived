@@ -112,14 +112,44 @@ function api_setActionState(result) {
 }
 
 function onMouseWheel(e) {
-    let html = document.documentElement;
-    let body = document.body;
-    let startingY = window.pageYOffset || body.scrollTop || html.scrollTop;
-    var newY = startingY + e.deltaY*15;
-    window.scrollTo(0, newY);
+    // deltaMode: 0=pixel, 1=line, 2=page
+    // Normalize to pixels so scrolling is always smooth and predictable
+    const LINE_HEIGHT = 18;
+    const PAGE_HEIGHT = window.innerHeight;
+    let delta;
+    switch (e.deltaMode) {
+        case 0: delta = e.deltaY; break;
+        case 1: delta = e.deltaY * LINE_HEIGHT; break;
+        case 2: delta = e.deltaY * PAGE_HEIGHT; break;
+        default: delta = e.deltaY;
+    }
+    window.scrollBy(0, delta);
     e.preventDefault();
+}
+
+// Throttle utility for wheel events
+function _frameThrottle(fn, limit) {
+    let lastCall = 0;
+    let tid = null;
+    return function () {
+        const args = arguments, ctx = this, now = Date.now();
+        const rem = limit - (now - lastCall);
+        if (rem <= 0) {
+            if (tid) { clearTimeout(tid); tid = null; }
+            lastCall = now;
+            fn.apply(ctx, args);
+        } else if (!tid) {
+            tid = setTimeout(function () {
+                lastCall = Date.now(); tid = null;
+                fn.apply(ctx, args);
+            }, rem);
+        }
+    };
 }
 
 document.addEventListener('DOMContentLoaded', onDomContentLoaded, false);
 window.addEventListener('message', onMessage);
-window.addEventListener('wheel', onMouseWheel, {passive: false});
+
+// Throttle wheel events to ~60fps (16ms) for smooth performance
+const throttledWheel = _frameThrottle(onMouseWheel, 16);
+window.addEventListener('wheel', throttledWheel, {passive: false});

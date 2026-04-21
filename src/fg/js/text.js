@@ -215,14 +215,75 @@ function selectedText() {
 }
 
 function isValidElement() {
-    // if (document.activeElement.getAttribute('contenteditable')) 
-    //     return false;
+    const el = document.activeElement;
+    if (!el) return false;
 
     const invalidTags = ['INPUT', 'TEXTAREA'];
-    const nodeName = document.activeElement.nodeName.toUpperCase();
-    if (invalidTags.includes(nodeName)) {
-        return false;
-    } else {
-        return true;
-    }
+    const nodeName = el.nodeName.toUpperCase();
+    if (invalidTags.includes(nodeName)) return false;
+
+    // Block lookups in contenteditable elements (Google Docs, web email, etc.)
+    if (el.isContentEditable) return false;
+
+    return true;
+}
+
+// --- Language detection utilities ---
+
+/**
+ * Detect writing script of text: 'cjk', 'cyrillic', 'latin', or 'unknown'
+ */
+function detectTextScript(text) {
+    if (!text) return 'unknown';
+    if (/[\u4e00-\u9fa5]/.test(text)) return 'cjk';
+    if (/[\u0400-\u04FF]/.test(text)) return 'cyrillic';
+    if (/[a-zA-Z\u00C0-\u024F]/.test(text)) return 'latin';
+    return 'unknown';
+}
+
+const LATIN_LANGUAGES = new Set(['en', 'fr', 'es', 'de', 'it']);
+
+/**
+ * Check if selected text matches the dictionary's source language
+ */
+function matchesSourceLanguage(text, sourceLang) {
+    const script = detectTextScript(text);
+    if (script === 'unknown') return true;
+    if (script === 'cjk') return sourceLang === 'cn';
+    if (script === 'cyrillic') return sourceLang === 'ru';
+    if (script === 'latin') return LATIN_LANGUAGES.has(sourceLang);
+    return true;
+}
+
+/**
+ * Extract source language code from dictionary name
+ * e.g. 'encn_Cambridge' → 'en', 'builtin_encn_Collins' → 'en'
+ */
+function parseDictSourceLanguage(dictName) {
+    if (!dictName) return null;
+    const name = dictName.startsWith('builtin_') ? dictName.slice(8) : dictName;
+    const match = name.match(/^([a-z]{2})[a-z]{2}_/);
+    return match ? match[1] : null;
+}
+
+/**
+ * Count words in text, with CJK-aware logic:
+ * - CJK characters: each character = 1 word
+ * - Latin/other: split by whitespace
+ * - Mixed: sum of both
+ */
+function countWords(text) {
+    if (!text) return 0;
+    const trimmed = text.trim();
+    if (!trimmed) return 0;
+
+    // Count CJK characters
+    const cjkMatches = trimmed.match(/[\u4e00-\u9fa5\u3400-\u4dbf\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af]/g);
+    const cjkCount = cjkMatches ? cjkMatches.length : 0;
+
+    // Remove CJK chars, count remaining whitespace-separated words
+    const nonCjk = trimmed.replace(/[\u4e00-\u9fa5\u3400-\u4dbf\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af]/g, ' ').trim();
+    const latinWords = nonCjk ? nonCjk.split(/\s+/).filter(w => w.length > 0) : [];
+
+    return cjkCount + latinWords.length;
 }

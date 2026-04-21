@@ -17,7 +17,13 @@
     decn_Eudict,
     escn_Eudict,
     frcn_Eudict,
-    rucn_Qianyi
+    rucn_Qianyi,
+    encn_LDOCE5MDX,
+    encn_Oxford_bing,
+    enen_LDOCE6MDX,
+    enen_UrbanDict,
+    frcn_Youdao,
+    itcn_Dict
 */
 
 class Sandbox {
@@ -41,7 +47,13 @@ class Sandbox {
             decn_Eudict: new decn_Eudict(),
             escn_Eudict: new escn_Eudict(),
             frcn_Eudict: new frcn_Eudict(),
-            rucn_Qianyi: new rucn_Qianyi()
+            rucn_Qianyi: new rucn_Qianyi(),
+            encn_LDOCE5MDX: new encn_LDOCE5MDX(),
+            encn_Oxford_bing: new encn_Oxford_bing(),
+            enen_LDOCE6MDX: new enen_LDOCE6MDX(),
+            enen_UrbanDict: new enen_UrbanDict(),
+            frcn_Youdao: new frcn_Youdao(),
+            itcn_Dict: new itcn_Dict()
         };
         this.current = null;
         window.addEventListener('message', e => this.onBackendMessage(e));
@@ -103,10 +115,11 @@ class Sandbox {
     }
 
     async backend_findTerm(params) {
-        let { expression, callbackId } = params;
+        let { expression, dictSelected, callbackId } = params;
 
-        if (this.dicts[this.current] && typeof(this.dicts[this.current].findTerm) === 'function') {
-            let notes = await this.dicts[this.current].findTerm(expression);
+        let dict = dictSelected || this.current;
+        if (this.dicts[dict] && typeof(this.dicts[dict].findTerm) === 'function') {
+            let notes = await this.dicts[dict].findTerm(expression);
             api.callback(notes, callbackId);
             return;
         }

@@ -16,6 +16,10 @@
     "lblEnabled": { "message": "Enabled" },
     "lblMouseselection": { "message": "Mouse Sel." },
     "lblHotkey": { "message": "AutoSel.Hotkey" },
+    "lblTheme": { "message": "Theme" },
+    "selThemeSystem": { "message": "System" },
+    "selThemeLight": { "message": "Light" },
+    "selThemeDark": { "message": "Dark" },
     "lblCurrentDict": { "message": "Selected Dict." },
     "lblLingualType": { "message": "Mono/Bilingual" },
     "selMonolingual": { "message": "Monolingual" },
@@ -25,6 +29,9 @@
     "lblAudioPref": { "message": "Audio Pref." },
     "lblAudioPref0": { "message": "#0(UK)" },
     "lblAudioPref1": { "message": "#1(US)" },
+    "lblMaxWords": { "message": "Max.Words#" },
+    "selUnlimited": { "message": "Unlimited" },
+    "lblShowToast": { "message": "Card Toast" },
 
 
     "lblServices": { "message": "Data Export" },
@@ -32,6 +39,8 @@
     "lblPassword": { "message": "Password" },
     "lblSignup": { "message": "Signup" },
     "lblSignin": { "message": "Signin" },
+    "lblAnkiconnecturl": { "message": "Connect URL" },
+    "lblConnect": { "message": "Connect" },
 
     "msgConnecting": { "message": "Connecting..." },
     "msgFailed": { "message": "Not Connected" },
@@ -102,5 +111,17 @@
     "fren_Collins": { "message": "Collins FR->EN Dictionary" },
     "rucn_Qianyi": { "message": "Qianyi RU->CN Dictionary" },
 
-    "labelAlignment": { "message": "initial" }
+    "labelAlignment": { "message": "initial" },
+
+    "tabSiteRulesTitle": { "message": "Site Rules" },
+    "grpSiteRules": { "message": "Site Rules" },
+    "btnAddRule": { "message": "+ Add Rule" },
+    "grpSiteRuleEditor": { "message": "Rule Editor" },
+    "lblRuleDomain": { "message": "Domain" },
+    "btnSaveRule": { "message": "Save" },
+    "btnEdit": { "message": "Edit" },
+    "btnDelete": { "message": "Delete" },
+    "msgNoRules": { "message": "No site rules defined." },
+    "btnImportRules": { "message": "Import" },
+    "btnExportRules": { "message": "Export" }
 }

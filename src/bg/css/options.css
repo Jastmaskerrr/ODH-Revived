@@ -11,6 +11,12 @@ body {
 
 .container {
     margin: 0 auto;
+    width: 100%;
+}
+
+.tabcontent {
+    width: 100%;
+    display: block;
 }
 
 .grouppanel {
@@ -34,7 +40,8 @@ body {
     width: 100%;
 }
 
-.leftpanel, .rightpanel {
+.leftpanel,
+.rightpanel {
     padding: 0 6px;
     float: left;
     width: 50%;
@@ -60,7 +67,9 @@ a {
     color: white;
 }
 
-label, input, select {
+label,
+input,
+select {
     width: 95px;
     padding: 4px;
     margin: 3px;
@@ -87,7 +96,7 @@ label {
     display: inline-block;
 }
 
-.gif{
+.gif {
     vertical-align: middle;
 }
 
@@ -124,4 +133,60 @@ a.tabmenu {
 
 .hidden {
     display: none;
+}
+
+/* Site Rules Styles */
+.rule-override-row {
+    margin-bottom: 2px;
+    display: flex;
+    align-items: center;
+}
+
+.rule-override-cb {
+    width: auto !important;
+    margin-right: 5px;
+    cursor: pointer;
+}
+
+.site-rule-item {
+    border: 1px solid #d5d5d5;
+    border-radius: 4px;
+    padding: 6px 8px;
+    margin-bottom: 5px;
+    background-color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.site-rule-domain {
+    font-weight: bold;
+    font-size: 13px;
+    color: #333;
+}
+
+.site-rule-summary {
+    color: #777;
+    font-size: 11px;
+    margin-left: 10px;
+    flex-grow: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.site-rule-actions {
+    display: flex;
+    white-space: nowrap;
+}
+
+.site-rule-actions a {
+    color: #4CAF50;
+    margin-left: 10px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.site-rule-actions a.btn-delete-rule {
+    color: #f44336;
 }

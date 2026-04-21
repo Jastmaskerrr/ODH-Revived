@@ -1,4 +1,52 @@
-/* global Popup, rangeFromPoint, TextSourceRange, selectedText, isEmpty, getSentence, isConnected, addNote, getTranslation, playAudio, isValidElement*/
+/* global Popup, rangeFromPoint, TextSourceRange, selectedText, isEmpty, getSentence, isConnected, addNote, getTranslation, playAudio, isValidElement, matchesSourceLanguage, parseDictSourceLanguage, countWords, showToast */
+
+// --- Utility: throttle ---
+function throttle(fn, limit) {
+    let lastCall = 0;
+    let timeoutId = null;
+    return function () {
+        const args = arguments;
+        const ctx = this;
+        const now = Date.now();
+        const remaining = limit - (now - lastCall);
+        if (remaining <= 0) {
+            if (timeoutId) { clearTimeout(timeoutId); timeoutId = null; }
+            lastCall = now;
+            fn.apply(ctx, args);
+        } else if (!timeoutId) {
+            timeoutId = setTimeout(function () {
+                lastCall = Date.now();
+                timeoutId = null;
+                fn.apply(ctx, args);
+            }, remaining);
+        }
+    };
+}
+
+// --- Utility: simple LRU cache for audio elements ---
+function LRUCache(maxSize, onEvict) {
+    this._map = new Map();
+    this._maxSize = maxSize || 10;
+    this._onEvict = onEvict || null;
+}
+LRUCache.prototype.get = function (key) {
+    if (!this._map.has(key)) return null;
+    const val = this._map.get(key);
+    // Refresh position
+    this._map.delete(key);
+    this._map.set(key, val);
+    return val;
+};
+LRUCache.prototype.set = function (key, value) {
+    if (this._map.has(key)) this._map.delete(key);
+    while (this._map.size >= this._maxSize) {
+        const oldest = this._map.keys().next().value;
+        if (this._onEvict) this._onEvict(oldest, this._map.get(oldest));
+        this._map.delete(oldest);
+    }
+    this._map.set(key, value);
+};
+
 class ODHFront {
 
     constructor() {
@@ -6,26 +54,32 @@ class ODHFront {
         this.point = null;
         this.notes = null;
         this.sentence = null;
-        this.audio = {};
+        this.audio = new LRUCache(10, function (_key, audio) {
+            audio.pause();
+            audio.src = '';
+        });
         this.enabled = true;
         this.mouseselection = true;
         this.activateKey = 16; // shift 16, ctl 17, alt 18
         this.exitKey = 27; // esc 27
-        this.maxContext = 1; //max context sentence #
+        this.maxContext = 1;
+        this.maxWords = 0; // 0 = unlimited
+        this.showtoast = true;
         this.services = 'none';
         this.popup = new Popup();
         this.timeout = null;
         this.mousemoved = false;
 
-        window.addEventListener('mousemove', e => this.onMouseMove(e));
-        window.addEventListener('mousedown', e => this.onMouseDown(e));
-        window.addEventListener('dblclick', e => this.onDoubleClick(e));
+        // Throttle mousemove to 50ms for performance
+        const throttledMouseMove = throttle((e) => this.onMouseMove(e), 50);
+        window.addEventListener('mousemove', throttledMouseMove, { passive: true });
+        window.addEventListener('mousedown', e => this.onMouseDown(e), { passive: true });
+        window.addEventListener('dblclick', e => this.onDoubleClick(e), { passive: true });
         window.addEventListener('keydown', e => this.onKeyDown(e));
 
         chrome.runtime.onMessage.addListener(this.onBgMessage.bind(this));
         window.addEventListener('message', e => this.onFrameMessage(e));
         document.addEventListener('selectionchange', e => this.userSelectionChanged(e));
-        //window.addEventListener('selectionend', e => this.onSelectionEnd(e));
     }
 
     onKeyDown(e) {
@@ -66,6 +120,7 @@ class ODHFront {
     }
 
     onMouseMove(e) {
+        if (!this.enabled) return;
         this.mousemoved = true;
         this.point = {
             x: e.clientX,
@@ -84,8 +139,6 @@ class ODHFront {
         // wait 500 ms after the last selection change event
         this.timeout = setTimeout(() => {
             this.onSelectionEnd(e);
-            //var selEndEvent = new CustomEvent('selectionend');
-            //window.dispatchEvent(selEndEvent);
         }, 500);
     }
 
@@ -101,6 +154,17 @@ class ODHFront {
         this.timeout = null;
         const expression = selectedText();
         if (isEmpty(expression)) return;
+
+        // Language mismatch check: skip if text doesn't match dictionary's source language
+        const dictSelected = this.options ? this.options.dictSelected : '';
+        const sourceLang = parseDictSourceLanguage(dictSelected);
+        if (sourceLang && !matchesSourceLanguage(expression, sourceLang)) return;
+
+        // Max words limit check (0 = unlimited)
+        if (this.maxWords > 0) {
+            const wordCount = countWords(expression);
+            if (wordCount > this.maxWords) return;
+        }
 
         let result = await getTranslation(expression);
         if (result == null || result.length == 0) return;
@@ -128,6 +192,9 @@ class ODHFront {
         this.mouseselection = options.mouseselection;
         this.activateKey = Number(this.options.hotkey);
         this.maxContext = Number(this.options.maxcontext);
+        this.maxWords = Number(this.options.maxwords || 0);
+        this.showtoast = options.showtoast !== false;
+        this.theme = options.theme || 'system';
         this.services = options.services;
         callback();
     }
@@ -149,7 +216,32 @@ class ODHFront {
         notedef.sentence = context;
         notedef.url = window.location.href;
         let response = await addNote(notedef);
-        this.popup.sendMessage('setActionState', { response, params });
+
+        // response is now {success, duplicate, noteId?, error?} or null (runtime disconnected)
+        const success = response && response.success;
+        const duplicate = response && response.duplicate;
+
+        // Popup icon still expects truthy/falsy for the old setActionState
+        this.popup.sendMessage('setActionState', { response: success, params });
+
+        // Toast feedback for card addition
+        if (this.showtoast && typeof showToast === 'function') {
+            const word = notedef.expression || '';
+            const deck = this.options ? this.options.deckname : 'Default';
+            const tags = this.options ? this.options.tags : '';
+
+            if (success) {
+                let msg = '✅ 已添加「' + word + '」→ 牌组: ' + deck;
+                if (tags) msg += ' | 标签: ' + tags;
+                showToast(msg, 'success');
+            } else if (duplicate) {
+                showToast('⚠️ 「' + word + '」卡片已存在，跳过重复添加', 'warning');
+            } else {
+                let msg = '❌ 添加「' + word + '」失败';
+                if (response && response.error) msg += '：' + response.error;
+                showToast(msg, 'error');
+            }
+        }
     }
 
     async api_playAudio(params) {
@@ -161,15 +253,15 @@ class ODHFront {
     api_playSound(params) {
         let url = params.sound;
 
-        for (let key in this.audio) {
-            this.audio[key].pause();
+        // Use LRU cache for audio elements
+        let audio = this.audio.get(url);
+        if (!audio) {
+            audio = new Audio(url);
+            this.audio.set(url, audio);
         }
 
-        const audio = this.audio[url] || new Audio(url);
         audio.currentTime = 0;
         audio.play();
-
-        this.audio[url] = audio;
     }
 
     buildNote(result) {
@@ -242,9 +334,10 @@ class ODHFront {
 
     popupHeader() {
         let root = chrome.runtime.getURL('/');
+        let themeClass = 'theme-' + this.theme;
         return `
         <!DOCTYPE html>
-            <html>
+            <html class="${themeClass}">
             <head>
                 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
                 <link rel="stylesheet" href="${root+'fg/css/frame.css'}">

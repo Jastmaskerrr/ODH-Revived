@@ -35,55 +35,52 @@ class TextSourceRange {
     }
 
     isAlpha(char) {
-        return /[\u002D|\u0041-\u005A|\u0061-\u007A|\u00A0-\u024F]/.test(char);
+        return /[\u002D\u0041-\u005A\u0061-\u007A\u00A0-\u024F]/.test(char);
     }
 
     getStartPos(backwardcount) {
-        let clone = this.rng.cloneRange();
         let pos = this.rng.startOffset;
         let count = 0;
-        let rangeText = '';
+        let text = this.rng.startContainer.data;
 
-        while (pos >= 1) {
-            clone.setStart(this.rng.startContainer, --pos);
-            rangeText = clone.toString();
-            count += this.isAlpha(rangeText.charAt(0)) ? 0 : 1;
-            if (count == backwardcount) {
-                break;
+        while (pos > 0) {
+            let char = text.charAt(pos - 1);
+            if (!this.isAlpha(char)) {
+                count++;
+                if (count == backwardcount) {
+                    break;
+                }
             }
+            pos--;
         }
         return pos;
     }
 
     getEndPos(forwardcount) {
-        let clone = this.rng.cloneRange();
         let pos = this.rng.endOffset;
         let count = 0;
-        let rangeText = '';
+        let text = this.rng.endContainer.data;
 
-        while (pos < this.rng.endContainer.data.length) {
-            clone.setEnd(this.rng.endContainer, ++pos);
-            rangeText = clone.toString();
-            count += this.isAlpha(rangeText.charAt(rangeText.length - 1)) ? 0 : 1;
-            if (count == forwardcount) {
-                break;
+        while (pos < text.length) {
+            let char = text.charAt(pos);
+            if (!this.isAlpha(char)) {
+                count++;
+                if (count == forwardcount) {
+                    break;
+                }
             }
+            pos++;
         }
         return pos;
     }
 
     setStartOffset(backwardcount) {
         let startPos = this.getStartPos(backwardcount);
-        if (startPos != 0)
-            startPos++;
         this.rng.setStart(this.rng.startContainer, startPos);
-
     }
 
     setEndOffset(forwardcount) {
         let endPos = this.getEndPos(forwardcount);
-        if (endPos != this.rng.endContainer.data.length)
-            endPos--;
         this.rng.setEnd(this.rng.endContainer, endPos);
     }
 

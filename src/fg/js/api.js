@@ -1,8 +1,20 @@
 async function sendtoBackend(request){
     return new Promise((resolve, reject)=>{
-        chrome.runtime.sendMessage(request, result => {
-            resolve(result);
-        });
+        try {
+            if (!chrome.runtime || !chrome.runtime.sendMessage) {
+                resolve(null);
+                return;
+            }
+            chrome.runtime.sendMessage(request, result => {
+                if (chrome.runtime.lastError) {
+                    resolve(null);
+                    return;
+                }
+                resolve(result);
+            });
+        } catch (err) {
+            resolve(null);
+        }
     });
 }
 

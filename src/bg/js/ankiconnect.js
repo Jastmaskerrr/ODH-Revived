@@ -1,6 +1,13 @@
 class Ankiconnect {
     constructor() {
         this.version = 6;
+        this.url = 'http://127.0.0.1:8765';
+    }
+
+    initConnection(options) {
+        if (options.ankiconnecturl) {
+            this.url = options.ankiconnecturl;
+        }
     }
 
     async ankiInvoke(action, params = {}, timeout = 3000) {
@@ -8,7 +15,7 @@ class Ankiconnect {
         let request = { action, version, params };
         return new Promise((resolve, reject) => {
             $.ajax({
-                url: 'http://127.0.0.1:8765',
+                url: this.url,
                 type: 'POST',
                 data: JSON.stringify(request),
                 timeout,
@@ -39,10 +46,15 @@ class Ankiconnect {
     }
 
     async addNote(note) {
-        if (note)
-            return await this.ankiInvoke('addNote', { note });
-        else
-            return Promise.resolve(null);
+        if (!note) return { success: false, duplicate: false };
+        try {
+            let result = await this.ankiInvoke('addNote', { note });
+            return { success: true, noteId: result, duplicate: false };
+        } catch (err) {
+            const errStr = String(err).toLowerCase();
+            const isDuplicate = errStr.includes('duplicate');
+            return { success: false, noteId: null, duplicate: isDuplicate, error: String(err) };
+        }
     }
 
     async getDeckNames() {

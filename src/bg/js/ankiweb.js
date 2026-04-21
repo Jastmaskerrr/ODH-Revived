@@ -4,11 +4,13 @@ class Ankiweb {
         this.version = 'web';
         this.id = '';
         this.password = '';
-        chrome.webRequest.onBeforeSendHeaders.addListener(
-            this.rewriteHeader, 
-            {urls: ['https://ankiweb.net/account/login', 'https://ankiuser.net/edit/save']}, 
-            ['requestHeaders', 'blocking']
-        );
+        if (chrome.webRequest && chrome.webRequest.onBeforeSendHeaders) {
+            chrome.webRequest.onBeforeSendHeaders.addListener(
+                this.rewriteHeader, 
+                {urls: ['https://ankiweb.net/account/login', 'https://ankiuser.net/edit/save']}, 
+                ['requestHeaders', 'blocking']
+            );
+        }
     }
 
     async initConnection(options, forceLogout = false) {
@@ -20,7 +22,11 @@ class Ankiweb {
     }
 
     async addNote(note) {
-        return (note && this.profile) ? await this.saveNote(note) : Promise.resolve(null);
+        if (note && this.profile) {
+            let result = await this.saveNote(note);
+            return { success: !!result, duplicate: false };
+        }
+        return { success: false, duplicate: false };
     }
 
     async getDeckNames() {
@@ -48,7 +54,7 @@ class Ankiweb {
                 let parser = new DOMParser();
                 let doc = parser.parseFromString(result, 'text/html');
                 let title = doc.querySelectorAll('h1');
-                if (!title.length) return Promise.reject(false);
+                if (!title.length) return reject(false);
                 switch (title[0].innerText) {
                     case 'Add':
                         resolve({
@@ -83,7 +89,7 @@ class Ankiweb {
                 let parser = new DOMParser();
                 let doc = parser.parseFromString(result, 'text/html');
                 let title = doc.querySelectorAll('h1');
-                if (!title.length) return Promise.reject(false);
+                if (!title.length) return reject(false);
                 if (title[0].innerText == 'Decks') {
                     resolve(true);
                 } else {

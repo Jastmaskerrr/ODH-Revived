@@ -1,4 +1,4 @@
-/* global Ankiconnect, Ankiweb, Deinflector, Builtin, Agent, optionsLoad, optionsSave */
+/* global Ankiconnect, Ankiweb, Deinflector, Builtin, Agent, optionsLoad, optionsSave, getEffectiveOptions */
 class ODHBack {
     constructor() {
         this.audios = {};
@@ -21,9 +21,18 @@ class ODHBack {
         chrome.runtime.onMessage.addListener(this.onMessage.bind(this));
         window.addEventListener('message', e => this.onSandboxMessage(e));
         chrome.runtime.onInstalled.addListener(this.onInstalled.bind(this));
-        chrome.tabs.onCreated.addListener((tab) => this.onTabReady(tab.id));
+        chrome.tabs.onCreated.addListener((tab) => this.onTabReady(tab.id, null, tab));
         chrome.tabs.onUpdated.addListener(this.onTabReady.bind(this));
-        chrome.commands.onCommand.addListener((command) => this.onCommand(command));
+        if (chrome.commands) {
+            chrome.commands.onCommand.addListener((command) => this.onCommand(command));
+        }
+
+        // 监听 storage.sync 变化（云端同步推送）
+        chrome.storage.onChanged.addListener((changes, areaName) => {
+            if (areaName === 'sync' && changes.siteRules) {
+                this.onSyncSiteRulesChanged(changes.siteRules);
+            }
+        });
 
     }
 
@@ -45,8 +54,28 @@ class ODHBack {
         }
     }
 
-    onTabReady(tabId) {
-        this.tabInvoke(tabId, 'setFrontendOptions', { options: this.options });
+    // 云端 siteRules 同步到达时触发
+    async onSyncSiteRulesChanged(change) {
+        const newRules = change.newValue || {};
+        if (this.options) {
+            this.options.siteRules = newRules;
+            // 同步写入 local 兜底缓存
+            chrome.storage.local.set({ siteRules: newRules });
+            // 重新分发配置到所有 Tab
+            this.setFrontendOptions(this.options);
+        }
+    }
+
+    onTabReady(tabId, changeInfo, tab) {
+        let effective = this.options;
+        const url = (tab && tab.url) || (changeInfo && changeInfo.url);
+        if (url) {
+            try {
+                const hostname = new URL(url).hostname;
+                effective = getEffectiveOptions(this.options, hostname);
+            } catch (e) { /* ignore invalid URLs */ }
+        }
+        this.tabInvoke(tabId, 'setFrontendOptions', { options: effective });
     }
 
     setFrontendOptions(options) {
@@ -58,8 +87,18 @@ class ODHBack {
                 chrome.browserAction.setBadgeText({ text: '' });
                 break;
         }
-        this.tabInvokeAll('setFrontendOptions', {
-            options
+        // 按 tab URL 分别计算有效配置后发送
+        chrome.tabs.query({}, (tabs) => {
+            for (let tab of tabs) {
+                let effective = options;
+                if (tab.url) {
+                    try {
+                        const hostname = new URL(tab.url).hostname;
+                        effective = getEffectiveOptions(options, hostname);
+                    } catch (e) { /* ignore invalid URLs */ }
+                }
+                this.tabInvoke(tab.id, 'setFrontendOptions', { options: effective });
+            }
         });
     }
 
@@ -80,8 +119,8 @@ class ODHBack {
         chrome.tabs.sendMessage(tabId, { action, params }, callback);
     }
 
-    formatNote(notedef) {
-        let options = this.options;
+    formatNote(notedef, effectiveOptions) {
+        let options = effectiveOptions || this.options;
         if (!options.deckname || !options.typename || !options.expression)
             return null;
 
@@ -125,6 +164,7 @@ class ODHBack {
 
         if (typeof(method) === 'function') {
             params.callback = callback;
+            params.sender = sender;
             method.call(this, params);
         }
         return true;
@@ -143,6 +183,7 @@ class ODHBack {
 
     async api_initBackend(params) {
         let options = await optionsLoad();
+        this.ankiconnect.initConnection(options);
         this.ankiweb.initConnection(options);
 
         //to do: will remove it late after all users migrate to new version.
@@ -189,15 +230,24 @@ class ODHBack {
     }
 
     async api_getTranslation(params) {
-        let { expression, callback } = params;
+        let { expression, callback, sender } = params;
 
         // Fix https://github.com/ninja33/ODH/issues/97
         if (expression.endsWith(".")) {
             expression = expression.slice(0, -1);
         }
 
+        // 获取发送者 tab 的 URL，以应用网站规则
+        let effectiveOptions = this.options;
+        if (sender && sender.tab && sender.tab.url) {
+            try {
+                const hostname = new URL(sender.tab.url).hostname;
+                effectiveOptions = getEffectiveOptions(this.options, hostname);
+            } catch (e) { /* ignore */ }
+        }
+
         try {
-            let result = await this.findTerm(expression);
+            let result = await this.findTerm(expression, effectiveOptions.dictSelected);
             callback(result);
         } catch (err) {
             console.error(err);
@@ -206,15 +256,24 @@ class ODHBack {
     }
 
     async api_addNote(params) {
-        let { notedef, callback } = params;
+        let { notedef, callback, sender } = params;
 
-        const note = this.formatNote(notedef);
+        // 根据发送者 Tab 的 URL 计算有效配置（网站规则覆盖）
+        let effectiveOptions = this.options;
+        if (sender && sender.tab && sender.tab.url) {
+            try {
+                const hostname = new URL(sender.tab.url).hostname;
+                effectiveOptions = getEffectiveOptions(this.options, hostname);
+            } catch (e) { /* ignore */ }
+        }
+        const note = this.formatNote(notedef, effectiveOptions);
         try {
             let result = await this.target.addNote(note);
+            // result is now {success, duplicate, noteId?, error?}
             callback(result);
         } catch (err) {
             console.error(err);
-            callback(null);
+            callback({ success: false, duplicate: false, error: String(err) });
         }
     }
 
@@ -247,6 +306,7 @@ class ODHBack {
                 this.target = null;
                 break;
             case 'ankiconnect':
+                this.ankiconnect.initConnection(options);
                 this.target = this.ankiconnect;
                 break;
             case 'ankiweb':
@@ -311,9 +371,9 @@ class ODHBack {
         });
     }
 
-    async findTerm(expression) {
+    async findTerm(expression, dictSelected) {
         return new Promise((resolve, reject) => {
-            this.agent.postMessage('findTerm', { expression }, result => resolve(result));
+            this.agent.postMessage('findTerm', { expression, dictSelected }, result => resolve(result));
         });
     }
 

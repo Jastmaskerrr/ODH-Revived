@@ -24,19 +24,33 @@ async function updateAnkiStatus(options) {
     }
 }
 
+let currentMatchedDomain = null;
+
 async function onOptionChanged(e) {
     if (!e.originalEvent) return;
 
     let options = await optionsLoad();
 
-    options.enabled = $('#enabled').prop('checked');
+    // These two are always global
     options.mouseselection = $('#mouseselection').prop('checked');
     options.hotkey = $('#hotkey').val();
 
-    options.dictSelected = $('#dict').val();
-
-    options.deckname = $('#deckname').val();
-    options.tags = $('#tags').val();
+    if (currentMatchedDomain) {
+        if (!options.siteRules) options.siteRules = {};
+        if (!options.siteRules[currentMatchedDomain]) options.siteRules[currentMatchedDomain] = {};
+        let rule = options.siteRules[currentMatchedDomain];
+        
+        rule.enabled = $('#enabled').prop('checked');
+        rule.dictSelected = $('#dict').val();
+        rule.deckname = $('#deckname').val();
+        rule.tags = $('#tags').val();
+    } else {
+        options.enabled = $('#enabled').prop('checked');
+        options.dictSelected = $('#dict').val();
+        options.deckname = $('#deckname').val();
+        options.tags = $('#tags').val();
+    }
+    
     let newOptions = await odhback().opt_optionsChanged(options);
     optionsSave(newOptions);
 }
@@ -51,28 +65,42 @@ function onMoreOptions() {
 
 async function onReady() {
     localizeHtmlPage();
-    let options = await optionsLoad();
-    $('#enabled').prop('checked', options.enabled);
-    $('#mouseselection').prop('checked', options.mouseselection);
-    $('#hotkey').val(options.hotkey);
-    populateDictionary(options.dictNamelist);
-    $('#dict').val(options.dictSelected);
-    $('#deckname').val(options.deckname);
-    $('#tags').val(options.tags);
+    let globalOptions = await optionsLoad();
+    
+    chrome.tabs.query({active: true, currentWindow: true}, async (tabs) => {
+        let options = globalOptions;
+        if (tabs && tabs[0] && tabs[0].url) {
+            try {
+                const hostname = new URL(tabs[0].url).hostname;
+                currentMatchedDomain = matchSiteRule(hostname, globalOptions.siteRules);
+                if (currentMatchedDomain) {
+                    options = getEffectiveOptions(globalOptions, hostname);
+                    $('#site-rule-indicator').text('🌐 ' + currentMatchedDomain).show();
+                }
+            } catch (e) { /* ignore invalid url */ }
+        }
+        
+        $('#enabled').prop('checked', options.enabled);
+        $('#mouseselection').prop('checked', globalOptions.mouseselection);
+        $('#hotkey').val(globalOptions.hotkey);
+        populateDictionary(globalOptions.dictNamelist);
+        $('#dict').val(options.dictSelected);
+        $('#deckname').val(options.deckname);
+        $('#tags').val(options.tags);
 
-    $('#enabled').change(onOptionChanged);
-    $('#mouseselection').change(onOptionChanged);
-    $('#hotkey').change(onOptionChanged);
-    $('#dict').change(onOptionChanged);
+        $('#enabled').change(onOptionChanged);
+        $('#mouseselection').change(onOptionChanged);
+        $('#hotkey').change(onOptionChanged);
+        $('#dict').change(onOptionChanged);
 
-    $('#deckname').change(onOptionChanged);
-    $('#tags').change(onOptionChanged);
+        $('#deckname').change(onOptionChanged);
+        $('#tags').change(onOptionChanged);
 
-    $('#more').click(onMoreOptions);
+        $('#more').click(onMoreOptions);
 
-    $('.anki-options').hide();
-    updateAnkiStatus(options);
-
+        $('.anki-options').hide();
+        updateAnkiStatus(options);
+    });
 }
 
 $(document).ready(utilAsync(onReady));

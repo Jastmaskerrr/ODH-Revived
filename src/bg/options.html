@@ -15,6 +15,7 @@
         <div class="tabmenus">
             <a href="#" data-contentid="tab-1" class="tabmenu active" data-i18n="tabExtensionTitle">General</a>
             <a href="#" data-contentid="tab-2" class="tabmenu" data-i18n="tabServicesTitle">Anki</a>
+            <a href="#" data-contentid="tab-4" class="tabmenu" data-i18n="tabSiteRulesTitle">Site Rules</a>
             <!--<a href="#" data-contentid="tab-3" class="tabmenu hidden" data-i18n="tabScriptsTitle">Scripts</a>-->
         </div>
 
@@ -46,6 +47,12 @@
                             <option value="17">Ctrl</option>
                             <option value="18">Alt</option>
                         </select>
+                        <label data-i18n="lblTheme">Theme</label>
+                        <select id="theme">
+                            <option value="system" data-i18n="selThemeSystem">System</option>
+                            <option value="light" data-i18n="selThemeLight">Light</option>
+                            <option value="dark" data-i18n="selThemeDark">Dark</option>
+                        </select>
                     </div>
                     <div class="clearfix"></div>
                 </div>
@@ -72,6 +79,11 @@
                             <option value="0" data-i18n="lblAudioPref0">#0</option>
                             <option value="1" data-i18n="lblAudioPref1">#1</option>
                         </select>
+                        <label data-i18n="lblShowToast">Card Toast</label>
+                        <div class="enabled">
+                            <input type="checkbox" value=true id="showtoast">
+                            <label for="showtoast"></label>
+                        </div>
                     </div>
                     <div class="rightpanel">
                         <label data-i18n="lblMaxContext">Max. Context #</label>
@@ -85,6 +97,15 @@
                             <option value="0">0</option>
                             <option value="1">1</option>
                             <option value="2">2</option>
+                        </select>
+                        <label data-i18n="lblMaxWords">Max. Words #</label>
+                        <select id="maxwords">
+                            <option value="0" data-i18n="selUnlimited">Unlimited</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="5">5</option>
+                            <option value="10">10</option>
                         </select>
                     </div>
                     <div class="clearfix"></div>
@@ -104,6 +125,14 @@
                             <option value="ankiweb">Ankiweb</option>
                         </select>
                         <label id="services-status">Anki Status</label>
+                    </div>
+                    <div id="ankiconnect-options">
+                        <hr>
+                        <div class="crosspanel">
+                            <label data-i18n="lblAnkiconnecturl">Connect URL</label>
+                            <input type="text" id="ankiconnecturl" placeholder="http://127.0.0.1:8765" class="col-2x">
+                            <label class="button" id="connect" data-i18n="lblConnect">Connect</label>
+                        </div>
                     </div>
                     <div id="user-options">
                         <hr>
@@ -194,9 +223,93 @@
                     </div>
                 </div>
             </div>
+            <div id="tab-4" class="tabcontent" style="display:none">
+                <div class="grouppanel">
+                    <div class="grouptitle">
+                        <span data-i18n="grpSiteRules">Site Rules</span>
+                        <span class="option-helps"><a id="btn-add-rule" href="#" data-i18n="btnAddRule">+ Add</a></span>
+                    </div>
+                    <div class="crosspanel" id="site-rules-list">
+                        <!-- Rules will be populated here -->
+                    </div>
+                </div>
+                <div class="grouppanel">
+                    <div class="crosspanel" style="padding: 5px 10px;">
+                        <input type="file" id="import-rules-file" accept=".json" style="display:none;">
+                        <label class="button" id="btn-import-rules" data-i18n="btnImportRules">Import</label>
+                        <label class="button" id="btn-export-rules" data-i18n="btnExportRules">Export</label>
+                    </div>
+                </div>
+                <div class="grouppanel" id="site-rule-editor" style="display:none;">
+                    <div class="grouptitle">
+                        <span data-i18n="grpSiteRuleEditor">Rule Editor</span>
+                        <span class="option-helps"><a id="btn-close-rule" href="#">X</a></span>
+                    </div>
+                    <div class="crosspanel">
+                        <label data-i18n="lblRuleDomain">Domain</label>
+                        <input type="text" id="rule-domain" placeholder="e.g. example.com" class="col-2x">
+                    </div>
+                    <hr>
+                    <div class="crosspanel">
+                        <div class="rule-override-row">
+                            <input type="checkbox" class="rule-override-cb" data-target="rule-enabled">
+                            <label data-i18n="lblEnabled">Enable/Disable</label>
+                            <div class="enabled"><input type="checkbox" id="rule-enabled"><label for="rule-enabled"></label></div>
+                        </div>
+                        <div class="rule-override-row">
+                            <input type="checkbox" class="rule-override-cb" data-target="rule-dictSelected">
+                            <label data-i18n="lblCurrentDict">Dictionary</label>
+                            <select id="rule-dictSelected" class="col-2x"></select>
+                        </div>
+                        <div class="rule-override-row">
+                            <input type="checkbox" class="rule-override-cb" data-target="rule-maxwords">
+                            <label data-i18n="lblMaxWords">Max. Words #</label>
+                            <select id="rule-maxwords">
+                                <option value="0" data-i18n="selUnlimited">Unlimited</option>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="5">5</option>
+                                <option value="10">10</option>
+                            </select>
+                        </div>
+                        <div class="rule-override-row">
+                            <input type="checkbox" class="rule-override-cb" data-target="rule-ankiconnecturl">
+                            <label data-i18n="lblAnkiconnecturl">Connect URL</label>
+                            <input type="text" id="rule-ankiconnecturl" placeholder="http://127.0.0.1:8765" class="col-2x">
+                        </div>
+                        <div class="rule-override-row">
+                            <input type="checkbox" class="rule-override-cb" data-target="rule-deckname">
+                            <label data-i18n="lblDeckname">Deck Name</label>
+                            <select id="rule-deckname" class="col-2x"></select>
+                        </div>
+                        <div class="rule-override-row">
+                            <input type="checkbox" class="rule-override-cb" data-target="rule-typename">
+                            <label data-i18n="lblTypename">Type Name</label>
+                            <select id="rule-typename" class="col-2x"></select>
+                        </div>
+                        <div class="rule-override-row">
+                            <input type="checkbox" class="rule-override-cb" data-target="rule-tags">
+                            <label data-i18n="lblTags">Tags Name</label>
+                            <input type="text" id="rule-tags" class="col-2x">
+                        </div>
+                        <div class="rule-override-row">
+                            <input type="checkbox" class="rule-override-cb" data-target="rule-duplicate">
+                            <label data-i18n="lblAllowDuplicate">Allow Duplicate</label>
+                            <select id="rule-duplicate" class="col-2x">
+                                <option value="0" data-i18n="selNotAllowed">Not Allowed</option>
+                                <option value="1" data-i18n="selAllowed">Allowed</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="crosspanel" style="text-align: right; margin-top: 10px;">
+                        <label class="button" id="btn-save-rule" data-i18n="btnSaveRule">Save</label>
+                    </div>
+                </div>
+            </div>
         </form>
         <hr>
-        <div class="grouppannel">
+        <div class="grouppanel">
             <div class="crosspanel">
                 <label class="button" id="saveload" data-i18n="btnSaveLoad">Save Options</label>
                 <div class="gifs">

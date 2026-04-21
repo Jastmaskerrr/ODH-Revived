@@ -1,59 +1,80 @@
-# Online Dictionary Helper (with Anki support)
+# 在线词典助手-复兴版
 
-[[中文版说明](README.zh_CN.md)]
+> **注记**：本项目是原 [ninja33/ODH](https://github.com/ninja33/ODH) 项目的重生分支（Revived Fork）。本分支的所有重构与新功能均通过 **Vibecode** 协作完成。
 
-Online Dictionary Helper is a Chrome/Firefox extension to show definitions for words and phrases from online (or builtin) dictionary via users' selection on any webpage and PDF documents (using [pdf.js](https://mozilla.github.io/pdf.js/)), which also supports flash-card creation using [Anki](https://github.com/dae/anki) (with **[AnkiConnect](https://github.com/FooSoft/anki-connect)**, an Anki add-on, installed).
+在线词典助手-复兴版是一个Firefox插件(Manifest V2)。用于浏览网页时查询在线词典，并将查询内容显示在单词旁的小弹窗里。该工具同时支持Anki制卡功能(需在Anki上安装**ankiconnect**插件).
 
-Details on the reasons for making this extension can be found in the [background](doc/background.md) introduction if you are interested.
+### 此分支的新增功能与优化：
+- **Android Firefox 支持**：适配并修复了安卓版 Firefox 浏览器的运行问题。
+- **深色主题**：支持“跟随系统 / 浅色 / 深色”模式。内置颜色反转滤镜，优化了硬编码词典内容在暗色模式下的可读性。
+- **Anki 制卡反馈**：通过全新的 Toast 提示系统，在制卡后明确显示保存成功的牌组名称，或展示“已重复/失败”的具体错误信息。
+- **划词数量限制**：新增划词数量上限设置，采用精确的 CJK（中日韩）感知计词，划选过长文本时系统自动跳过，防止卡顿。
+- **自定义 AnkiConnect 地址**：打破本地通信限制，支持配置自定义 IP 和端口以连接局域网或远程 Anki 服务器。
+- **网站规则 (Site Rules)**：支持针对不同域名（域名后缀匹配）设置个性化的取词配置。您可以为特定网站指定专用的词典、Anki 牌组、笔记模板、标签或字数限制，支持网站规则的 JSON 格式导入导出与云同步。
+- **性能优化**：
+  - 引入高频事件（划词捕捉、鼠标滚轮）的节流和被动监听机制。
+  - 针对外部发音模块新增 LRU 缓存以防止音频资源内存泄漏。
+- **Bug 修复**：
+  - 修复了在文本编辑器内按 Shift 键导致扩展误触发报错的冲突问题。
+  - 重构了底层划词边界探测逻辑，彻底解决偶发包含末尾标点的越界 Bug，取词更精准。
+  - 修正了长弹窗中随着鼠标滚轮滚动会大幅跳步的异常体验。
 
-![Anki Notes](https://raw.githubusercontent.com/ninja33/ODH/master/doc/img/anki_001_640x400.png)
+## 使用说明
 
-What might set this extension apart is that users can grab online dictionary content with their own customized script (running under extension development mode). For development details, please check the [development guide](doc/development.md).
+- [Firefox扩展下载链接](https://addons.mozilla.org/zh-CN/firefox/addon/odh-revival/)
 
-## How to use
+1. 从Firefox扩展页下载安装插件后，从选项页激活插件。
+2. 打开任意想要取词翻译的网页，将鼠标放在单词上，拖动选择或者双击选择该单词。
+3. 如果单词本身是一个链接不宜点击，可按**取词热键**(在选项中设定)自动选取单词。
+4. 根据选项中所选词典，一个含释义的弹窗将会显示在上述选中单词的旁边。
+5. (可选操作) 在Ankiconnect已经安装，并且Anki已经打开的情况下，可在选项页设定Anki牌组名称、模板名称，以及用于放置 **单词字段**、**音标字段**、**额外字段**、**释义字段**、**原句字段**的字段名称。
+6. (可选操作) 在上述弹窗中，点击每个释义右上角的绿色**(+)**图标，可进行Anki制卡。
 
-- [Install from Chrome Web Store](https://chrome.google.com/webstore/detail/anki-online-dictionary-he/lppjdajkacanlmpbbcdkccjkdbpllajb?hl=en)
+## 详细选项设定
 
-- [Install from Firefox Add-ons](https://addons.mozilla.org/en-US/firefox/addon/online-dictionary-helper/)
+本插件的选项主要分为三个部分：
 
-1. Install the extension first from Chrome Web Store or Firefox Add-ons, then configure and activate the extension on your demands in the options page.
-2. Open any webpage, move your mouse cursor over the word that you want to select and translate, drag and select/double-click/press **Hotkey** (defined in options page) to select the word or phrase.
-3. If the word or phrase is a clickable link, use the predefined **Hotkey** or hold the <kbd>Alt</kbd> key while selecting to translate.
-4. A popup window will show up above the selection displaying the word definition.
-5. (Optional) While Anki and AnkiConnect are installed and running, go to the `Services Options` tab in the options page to setup the Anki deck, type, and field names to put your **expression**, **sentence**, **reading**, **definition**, etc.
-6. (Optional) Press the green **(+)** button on the top right corner of each definition in the popup window to add the word or phrase to Anki as a note.
+1. 通用选项:
+    - 启用关闭：用于开启和关闭插件。
+    - 取词热键：用于设定自动选取单词的热键，有四个选项。off:关闭热键、shift键、ctrl键和alt键。
+    - 界面主题：支持跟随系统、浅色模式和深色模式。深色模式会自动反转并优化词典内硬编码的色彩，让文字清晰不刺眼。
+    - 最大原句数量：用于设定从文章上下文中摘取的最大原句数量。
+    - 最大例句数量：用于设定词典中例句的显示数量(需该词典脚本支持)。
+    - 选词数量：可设置划取取词的最大单词数量限制，支持精准的混排 CJK 和英文字符数切分功能。
+    - 制卡提示：在右上角开启/关闭制卡 Toast 反馈提示操作框，快速掌握卡片是否成功提交、是否重复等。
+2. Anki选项:
+    当Anki和Ankiconnect插件都已安装并打开时，插件会从Anki中获取你的牌组模板列表，并显示如下选项。
+    - 牌组名称：牌组名称的下拉列表，用于选择制卡所需**牌组名称**。
+    - 模板名称：模板名称的下拉列表，用于选择制卡所需**模板名称**。
+    - 单词字段名称：上述模板所含的字段列表，用于选择放置**单词字段**的字段名称。
+    - 音标字段名称：上述模板所含的字段列表，用于选择放置**音标字段**的字段名称。
+    - 额外字段名称：上述模板所含的字段列表，用于选择放置**额外字段**的字段名称。
+    - 释义字段名称：上述模板所含的字段列表，用于选择放置**释义字段**的字段名称。
+    - 原句字段名称：上述模板所含的字段列表，用于选择放置**原句字段**的字段名称。
+    - 服务端 URL：可修改默认的向本地 127.0.0.1 发起请求的通讯地址，以便支持连接处于局域网中其他设备上的 Ankiconnect。
+    - 当前Anki状态：显示当前Anki连接状态和Ankiconnect版本号。
 
-## The Options Page
+3. 词典选项:
 
-The options of this extension are divided into three sections.
+    - 脚本地址: 在此处可输入脚本地址，并点击**加载脚本**按钮加载。加载后可在下方词典列表中选择新加载词典。
+    - 当前词典: 显示所有插件内置和外部加载的词典名称，用于选择当前划词翻译所用词典。
+4. 网站规则:
+    支持按域名后缀进行“最长路径匹配”的规则覆盖。
+    - 规则优先级：规则中的设置（如词典、Anki 牌组等）会自动覆盖全局通用设置。
+    - 云端同步：规则会自动通过 Firefox 账号同步至云端。
+    - 导入导出：支持 JSON 文件的备份与合并导入。
 
-1. General Options
-    - Enabled: Turn the extension on/off.
-    - AutoSel.Hotkey: Configure the **Hotkey** to select words or phrases. Four options are available: Off(Disable the hotkey), <kbd>Shift</kbd>, <kbd>Ctrl</kbd>, and <kbd>Alt</kbd> key.
-    - Max.Context: Set the maximum number of sentences extracted from the context of the webpage.
-    - Max.Example: Set the maximum number of example sentences from the dictionary (requires support of the dictionary script).
+![Options Page](https://raw.githubusercontent.com/Jastmaskerrr/ODH/master/doc/img/option_general_640x400.png)
 
-2. AnkiConnect Options: Setup Anki deck/type name, and which note fields you are going to put **expression**, **sentence**, **reading**, **definition**, etc.
+## 使用其他脚本
 
-3. Dictionary Options:
-    - Dictionary Script: Input your own script name here, and click <kbd>Load Script</kbd> button to load it.
-    - Selected Dictionary: Choose the dictionary (bultin or loaded) for the definitions on your preference.
+1. 你可以选择预制的脚本，详见[[脚本清单](doc/scriptlist.md)]。
+2. 也可以自行开发并加载，详见[[开发指南](doc/development.md)]。
+3. 如有任何问题和想法，你也可以提交[[issue](https://github.com/Jastmaskerrr/ODH/issues)]。
 
-![Options Page](https://raw.githubusercontent.com/ninja33/ODH/master/doc/img/option_general_640x400_en.png)
+## Pull request
 
-## Development
-### Getting started
-The source code of this extension on Github does not contain offline dictionary and English word deformation table data. You can go to the Chrome Web Store to download, or use a Chrome extension downloader to download the plugin's crx file and extract the dictionary JSON file.
+如果你想提交词典脚本或者改进插件本身，欢迎PR。
 
-### Use existing script or develop by yourself
-
-1. You can use existing dictionary scripts in the [dictionaries list](doc/scriptlist.md).
-2. Or develop the script by yourself based on [development guide](doc/development.md).
-3. Or open an [issue](https://github.com/ninja33/ODH/issues) in this repo if you really need help.
-
-### Pull request
-
-Pull requests are welcome if you want to enhance this extension, or submit your own dictionary script in the next release.
-
-- The extension source will go to [/src](https://github.com/ninja33/ODH/tree/master/src)
-- The dictionary script will go to [/src/dict](https://github.com/ninja33/ODH/tree/master/src/dict)
+- 插件代码 [[/src](https://github.com/Jastmaskerrr/ODH/tree/master/src)]。
+- 脚本代码 [[/src/dict](https://github.com/Jastmaskerrr/ODH/tree/master/src/dict)]。
