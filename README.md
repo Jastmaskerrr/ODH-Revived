@@ -2,8 +2,9 @@
 
 > **注记**：本项目是原 [ninja33/ODH](https://github.com/ninja33/ODH) 项目的重生分支（Revived Fork）。本分支的所有重构与新功能均通过 **Vibecode** 协作完成。
 
-在线词典助手-复兴版是一个Firefox插件(Manifest V2)。用于浏览网页时查询在线词典，并将查询内容显示在单词旁的小弹窗里，同时支持Anki制卡功能。![anki_cover](.assets/anki_cover.png)
+在线词典助手-复兴版是一个Firefox插件(Manifest V2)。可以在阅读网页时，通过鼠标划选或悬停查询单词与短语，显示包含上下文的释义，并一键发送至本地 Anki 进行复习。
 
+<img src=".assets/anki_cover.png" alt="anki_cover" style="zoom: 25%;" />
 
 ### 此分支的新增功能与优化：
 
