@@ -2,7 +2,7 @@
 
 > **注记**：本项目是原 [ninja33/ODH](https://github.com/ninja33/ODH) 项目的重生分支（Revived Fork）。本分支的所有重构与新功能均通过 **Vibecode** 协作完成。
 
-在线词典助手-复兴版是一个Firefox插件(Manifest V2)。用于浏览网页时查询在线词典，并将查询内容显示在单词旁的小弹窗里，同时支持Anki制卡功能。![anki_cover](doc/img/anki_cover.png)
+在线词典助手-复兴版是一个Firefox插件(Manifest V2)。用于浏览网页时查询在线词典，并将查询内容显示在单词旁的小弹窗里，同时支持Anki制卡功能。![anki_cover](.assets/anki_cover.png)
 
 ### 此分支的新增功能与优化：
 
@@ -65,7 +65,7 @@
     - 云端同步：规则会自动通过 Firefox 账号同步至云端。
     - 导入导出：支持 JSON 文件的备份与合并导入。
 
-![image-20260422112100539](.assets/image-20260422112100539.png)
+![网战规则](.assets/option_003.png)
 
 ## 使用其他脚本
 
