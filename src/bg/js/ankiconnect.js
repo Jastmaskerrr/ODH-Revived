@@ -69,6 +69,14 @@ class Ankiconnect {
         return await this.ankiInvoke('modelFieldNames', { modelName });
     }
 
+    async findNotes(query) {
+        return await this.ankiInvoke('findNotes', { query });
+    }
+
+    async deleteNotes(noteIds) {
+        return await this.ankiInvoke('deleteNotes', { notes: noteIds });
+    }
+
     async getVersion() {
         let version = await this.ankiInvoke('version', {}, 100);
         return version ? 'ver:' + version : null;

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <link rel="stylesheet" href="css/tabmenu.css">
@@ -16,14 +17,20 @@
 
         <div id="tab-1" class="tabcontent">
             <h3>在线词典助手-升级说明</h3>
-            <p>您已升级至在线词典助手 0.9.9 版本。如需完整文档或插件最新信息，请访问
-                <a class="notice" href="https://github.com/Jastmaskerrr/ODH" target="_blank">项目主页</a>
+            <p>您已升级至在线词典助手 1.0.0 版本。如需完整文档或插件最新信息，请访问
+                <a class="notice" href="https://github.com/Jastmaskerrr/ODH-Revived" target="_blank">项目主页</a>
             </p>
+            <b class="notice">1.0.0 版更新</b>
+            <ol>
+                <li>新增：<b>最近添加卡片</b>查看功能。在弹窗 (popup.html) 中可直接查看最近添加的 5 个单词，并支持点击一键删除。</li>
+                <li>优化：<b>Anki 制卡提示</b>增强。成功添加卡片后，若 Anki 中已存在同名卡片，会在 Toast 提示中显示具体重复数量。</li>
+                <li>修复：重构了词典语言检测逻辑。修复了类似 <code>general_Makenotes</code> 等非标准命名词典导致的取词拦截 Bug。</li>
+            </ol>
             <b class="notice">0.9.9 版更新</b>
             <ol>
                 <li>新增：<b>网站规则（Site Rules）</b>功能。支持针对不同域名设置个性化的取词配置（如特定词典、Anki 牌组、最大词数限制等）。</li>
-                <li>新增：<b>火狐云同步 (Firefox Sync)</b> 支持。网站规则现已接入混合存储策略，可跨设备自动同步您的域名个性化配置。</li>
-                <li>新增：支持网站规则的<b>导入与导出 (JSON)</b>。方便用户快速备份或在不同环境间共享特定网站的翻译规则。</li>
+                <li>新增：火狐云同步 (Firefox Sync) 支持。网站规则现已接入混合存储策略，可跨设备自动同步您的域名个性化配置。</li>
+                <li>新增：支持网站规则的导入与导出 (JSON)。方便用户快速备份或在不同环境间共享特定网站的翻译规则。</li>
                 <li>修复：解决了网站规则编辑器与弹窗修改无法同步的问题。</li>
                 <li>优化：重新设计了选项页布局，确保在不同配置状态下界面始终美观、整齐。</li>
             </ol>
@@ -34,16 +41,16 @@
             </ol>
             <b class="notice">0.9.7 版更新</b>
             <ol>
-                <li>新增：支持暗色模式/深色主题，智能反转硬编码词典颜色保护视力</li>
-                <li>新增：Ankiconnect 制卡操作加入 Toast 弹窗反馈，提供详细成功/重复/失败提示（可关闭）</li>
-                <li>新增：可设置最大选词数量，包含针对中文/英文混合分词的精确字符数计算</li>
+                <li>新增：支持<b>暗色模式/深色主题</b>，智能反转硬编码词典颜色保护视力</li>
+                <li>新增：Ankiconnect 制卡操作加入<b>Toast弹窗反馈</b>，提供详细成功/重复/失败提示（可关闭）</li>
+                <li>新增：可设置<b>最大选词数量</b>，包含针对中文/英文混合分词的精确字符数计算</li>
                 <li>新增：非目标语言划词时智能跳过查询，避免无效报错</li>
                 <li>修复：在 Google Docs 等各种 contenteditable 页面中误触发 Shift 取词的问题</li>
                 <li>优化：划词性能、音频播放防泄漏与鼠标重操作节流，提升扩展稳定与流畅性</li>
             </ol>
             <b class="notice">0.9.6 版更新</b>
             <ol>
-                <li>新增：支持自定义 Ankiconnect 连接地址（IP/端口），方便局域网或远程 Anki 连接</li>
+                <li>新增：支持<b>自定义 Ankiconnect 连接地址</b>（IP/端口），方便局域网或远程 Anki 连接</li>
                 <li>修复：鼠标滚轮在查词弹窗中直接跳到顶部或底部的滚动异常问题</li>
                 <li>修复：ankiweb.js 中 Promise.reject 调用错误导致控制台报错的问题</li>
                 <li>修复：Android 版火狐浏览器上 chrome.commands 未定义导致扩展无法初始化的问题</li>
@@ -58,34 +65,48 @@
 
         <div id="tab-2" class="tabcontent" style="display:none">
             <h3>Online Dictionary Helper -- Upgrade Notes</h3>
-            <p>Your extension was upgraded to v0.9.9. If you need more details, please visit
-                <a class="notice" href="https://github.com/Jastmaskerrr/ODH" target="_blank">Project Home</a>
+            <p>Your extension was upgraded to v1.0.0. If you need more details, please visit
+                <a class="notice" href="https://github.com/Jastmaskerrr/ODH-Revived" target="_blank">Project Home</a>
             </p>
+            <b class="notice">version 1.0.0</b>
+            <ol>
+                <li>New: <b>Recent Cards</b> viewer in popup. View the last 5 added cards directly in the browser action
+                    popup and delete them with one click.</li>
+                <li>New: <b>Duplicate Card Hint</b> in Toast. When adding a card, if duplicates already exist in Anki,
+                    the Toast notification will show the exact count.</li>
+                <li>Fix: Rewritten Dictionary Language Detection. Fixed bugs where non-standard dictionary names (like
+                    <code>general_Makenotes</code>) caused lookup interference.</li>
+            </ol>
             <b class="notice">version 0.9.9</b>
             <ol>
-                <li>New: <b>Site Rules</b> feature. Allows domain-specific configuration overrides (Dictionary, Max words, Anki Deck/Note types, etc.).</li>
-                <li>New: <b>Firefox Sync</b> support. Site Rules are now automatically synchronized across all your devices using Firefox accounts.</li>
-                <li>New: <b>Import/Export (JSON)</b> for Site Rules. Easily backup or share your domain-specific translation settings.</li>
+                <li>New: <b>Site Rules</b> feature. Allows domain-specific configuration overrides (Dictionary, Max
+                    words, Anki Deck/Note types, etc.).</li>
+                <li>New: Firefox Sync support. Site Rules are now automatically synchronized across all your
+                    devices using Firefox accounts.</li>
+                <li>New: Import/Export (JSON) for Site Rules. Easily backup or share your domain-specific
+                    translation settings.</li>
                 <li>Fix: Synchronized the data flow between Site Rule editor and Popup quick-settings.</li>
                 <li>Optimize: Redesigned the Options UI for better consistency and responsiveness across all tabs.</li>
             </ol>
             <b class="notice">version 0.9.8</b>
             <ol>
                 <li>Fix: Mouse wheel scroll step size was too large in the popup window.</li>
-                <li>Fix: Text selection boundary detector bug that incorrectly included ending punctuation (e.g. colon in <code>Example:</code>). Rewritten for perfect precision.</li>
+                <li>Fix: Text selection boundary detector bug that incorrectly included ending punctuation (e.g. colon
+                    in <code>Example:</code>). Rewritten for perfect precision.</li>
             </ol>
             <b class="notice">version 0.9.7</b>
             <ol>
-                <li>New: Dark mode support with intelligent color inversion for hardcoded dictionary styles</li>
-                <li>New: Anki built-in Toast notifications for showing detailed success/duplicate/error states</li>
-                <li>New: Maximum selected words limit with accurate CJK/Latin word counting</li>
+                <li>New: <b>Dark mode support</b> with intelligent color inversion for hardcoded dictionary styles</li>
+                <li>New: Anki built-in <b>Toast notifications</b> for showing detailed success/duplicate/error states
+                </li>
+                <li>New: <b>Maximum selected words limit</b> with accurate CJK/Latin word counting</li>
                 <li>New: Smart language filtering to skip dictionary lookups for non-matching languages</li>
                 <li>Fix: Prevent Shift key hotkey from triggering in contenteditable elements like Google Docs</li>
                 <li>Optimize: Improved frontend performance with better throttling and audio memory cache</li>
             </ol>
             <b class="notice">version 0.9.6</b>
             <ol>
-                <li>New: Support custom Ankiconnect URL (IP/port) for LAN or remote Anki connections</li>
+                <li>New: Support <b>custom Ankiconnect URL</b> (IP/port) for LAN or remote Anki connections</li>
                 <li>Fix: Mouse wheel in the popup window jumping to top/bottom instead of smooth scrolling</li>
                 <li>Fix: Incorrect Promise.reject usage in ankiweb.js causing unhandled rejection errors</li>
                 <li>Fix: chrome.commands undefined on Android Firefox causing extension initialization failure</li>

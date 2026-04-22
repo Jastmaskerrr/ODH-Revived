@@ -233,6 +233,9 @@ class ODHFront {
             if (success) {
                 let msg = '✅ 已添加「' + word + '」→ 牌组: ' + deck;
                 if (tags) msg += ' | 标签: ' + tags;
+                if (response.existingCount > 0) {
+                    msg += ' (💡提示：Anki 中另有 ' + response.existingCount + ' 张同名卡片)';
+                }
                 showToast(msg, 'success');
             } else if (duplicate) {
                 showToast('⚠️ 「' + word + '」卡片已存在，跳过重复添加', 'warning');

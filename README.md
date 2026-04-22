@@ -4,14 +4,17 @@
 
 在线词典助手-复兴版是一个Firefox插件(Manifest V2)。用于浏览网页时查询在线词典，并将查询内容显示在单词旁的小弹窗里，同时支持Anki制卡功能。![anki_cover](.assets/anki_cover.png)
 
+
 ### 此分支的新增功能与优化：
 
 - **Android Firefox 支持**：适配并修复了安卓版 Firefox 浏览器的运行问题。
 - **深色主题**：支持“跟随系统 / 浅色 / 深色”模式。内置颜色反转滤镜，优化了硬编码词典内容在暗色模式下的可读性。
 - **网站规则 (Site Rules)**：支持针对不同域名（域名后缀匹配）设置个性化的取词配置。您可以为特定网站指定专用的词典、Anki 牌组、笔记模板、标签或字数限制，支持网站规则的 JSON 格式导入导出与**云同步**。
 - **自定义 AnkiConnect 地址**：打破本地通信限制，支持配置自定义 IP 和端口以连接局域网或远程 Anki 服务器。
-- **Anki 制卡反馈**：通过全新的 Toast 提示系统，在制卡后明确显示保存成功的牌组名称，或展示“已重复/失败”的具体错误信息。
+- **Anki 制卡反馈与重复提示**：通过 Toast 提示系统实时反馈结果。制卡成功后，若 Anki 中已存在同名卡片，会自动提示已存在的卡片数量。
+- **最近添加记录**：在扩展弹窗中快速查看最近通过 AnkiConnect 添加的 5 条卡片记录，支持一键删除。
 - **划词数量限制**：新增划词数量上限设置，采用精确的 CJK（中日韩）感知计词，划选过长文本时系统自动跳过，防止卡顿。
+- **智能语言匹配**：自动识别选词语种并匹配相应词典，避免跨语言查询报错。
 - **性能优化**：
   - 引入高频事件（划词捕捉、鼠标滚轮）的节流和被动监听机制。
   - 针对外部发音模块新增 LRU 缓存以防止音频资源内存泄漏。
@@ -19,6 +22,8 @@
   - 修复了在文本编辑器内按 Shift 键导致扩展误触发报错的冲突问题。
   - 重构了底层划词边界探测逻辑，彻底解决偶发包含末尾标点的越界 Bug，取词更精准。
   - 修正了长弹窗中随着鼠标滚轮滚动会大幅跳步的异常体验。
+
+[[查看详细更新日志](doc/changelog.md)]
 
 ## 使用说明
 
@@ -53,6 +58,7 @@
     - 释义字段名称：上述模板所含的字段列表，用于选择放置**释义字段**的字段名称。
     - 原句字段名称：上述模板所含的字段列表，用于选择放置**原句字段**的字段名称。
     - 服务端 URL：可修改默认的向本地 127.0.0.1 发起请求的通讯地址，以便支持连接处于局域网中其他设备上的 Ankiconnect。
+    - 最近添加：在弹窗下方显示最近添加的卡片列表，方便快速检查或撤销（删除）刚刚添加的单词。
     - 当前Anki状态：显示当前Anki连接状态和Ankiconnect版本号。
 
 3. 词典选项:
@@ -71,11 +77,12 @@
 
 1. 你可以选择预制的脚本，详见[[脚本清单](doc/scriptlist.md)]。
 2. 也可以自行开发并加载，详见[[开发指南](doc/development.md)]。
-3. 如有任何问题和想法，你也可以提交[[issue](https://github.com/Jastmaskerrr/ODH/issues)]。
+3. 如有任何问题和想法，你也可以提交[[issue](https://github.com/Jastmaskerrr/ODH-Revived/issues)]。
+
 
 ## Pull request
 
 如果你想提交词典脚本或者改进插件本身，欢迎PR。
 
-- 插件代码 [[/src](https://github.com/Jastmaskerrr/ODH/tree/master/src)]。
-- 脚本代码 [[/src/dict](https://github.com/Jastmaskerrr/ODH/tree/master/src/dict)]。
+- 插件代码 [[/src](https://github.com/Jastmaskerrr/ODH-Revived/tree/master/src)]。
+- 脚本代码 [[/src/dict](https://github.com/Jastmaskerrr/ODH-Revived/tree/master/src/dict)]。

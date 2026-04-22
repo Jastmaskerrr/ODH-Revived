@@ -18,9 +18,53 @@ async function updateAnkiStatus(options) {
     let version = await odhback().opt_getVersion();
     if (version === null) {
         $('.anki-options').hide();
+        $('.recent-cards-panel').hide();
     } else {
         populateAnkiDeckAndModel(options);
         $('.anki-options').show();
+        if (options.services === 'ankiconnect') {
+            loadRecentCards();
+        }
+    }
+}
+
+async function loadRecentCards() {
+    let cards = await odhback().opt_getRecentCards();
+    renderRecentCards(cards || []);
+}
+
+function renderRecentCards(cards) {
+    const list = $('#recent-cards-list');
+    list.empty();
+
+    const display = cards.slice(0, 5);
+    if (display.length === 0) {
+        list.append('<div class="recent-cards-empty" data-i18n="msgNoRecentCards">No cards added yet.</div>');
+        localizeHtmlPage();
+    } else {
+        display.forEach(card => {
+            const item = $('<div class="recent-card-item"></div>');
+            item.append($('<span class="recent-card-word"></span>').text(card.expression));
+            const btn = $('<button class="recent-card-delete" title="Delete">×</button>');
+            btn.on('click', () => deleteCard(card.noteId, item));
+            item.append(btn);
+            list.append(item);
+        });
+    }
+    $('.recent-cards-panel').show();
+}
+
+async function deleteCard(noteId, itemEl) {
+    itemEl.find('.recent-card-delete').prop('disabled', true).css('opacity', '0.3');
+    try {
+        await odhback().opt_deleteCard(noteId);
+        // 先获取新数据，再做动画，避免异步间隙导致闪烁
+        let cards = await odhback().opt_getRecentCards();
+        itemEl.fadeOut(200, () => {
+            renderRecentCards(cards || []);
+        });
+    } catch (err) {
+        itemEl.find('.recent-card-delete').prop('disabled', false).css('opacity', '0.6');
     }
 }
 

@@ -270,6 +270,14 @@ class ODHBack {
         try {
             let result = await this.target.addNote(note);
             // result is now {success, duplicate, noteId?, error?}
+            if (result && result.success && result.noteId && effectiveOptions.services === 'ankiconnect') {
+                await this._saveRecentCard(notedef.expression || '', result.noteId);
+                // 查询同名卡片数量（查询失败不影响主流程）
+                try {
+                    let dupCount = await this._countDuplicates(notedef.expression, effectiveOptions);
+                    if (dupCount > 0) result.existingCount = dupCount;
+                } catch (e) { /* 忽略查询错误 */ }
+            }
             callback(result);
         } catch (err) {
             console.error(err);
@@ -335,6 +343,38 @@ class ODHBack {
         return this.options;
     }
 
+
+    // --- Recent Cards ---
+    async _saveRecentCard(expression, noteId) {
+        const data = await new Promise(r => chrome.storage.local.get('recentCards', r));
+        let cards = data.recentCards || [];
+        cards.unshift({ expression, noteId, timestamp: Date.now() });
+        if (cards.length > 20) cards = cards.slice(0, 20);
+        await new Promise(r => chrome.storage.local.set({ recentCards: cards }, r));
+    }
+
+    async _countDuplicates(word, options) {
+        if (!word || !options.deckname || !options.typename || !options.expression) return 0;
+        const query = `"deck:${options.deckname}" "note:${options.typename}" "${options.expression}:${word}"`;
+        const noteIds = await this.ankiconnect.findNotes(query);
+        // 减去刚添加的那张，返回已存在的数量
+        return (noteIds && noteIds.length > 1) ? noteIds.length - 1 : 0;
+    }
+
+    async opt_getRecentCards() {
+        const data = await new Promise(r => chrome.storage.local.get('recentCards', r));
+        return data.recentCards || [];
+    }
+
+    async opt_deleteCard(noteId) {
+        if (this.ankiconnect) {
+            await this.ankiconnect.deleteNotes([noteId]);
+        }
+        // 从本地记录中移除
+        const data = await new Promise(r => chrome.storage.local.get('recentCards', r));
+        let cards = (data.recentCards || []).filter(c => c.noteId !== noteId);
+        await new Promise(r => chrome.storage.local.set({ recentCards: cards }, r));
+    }
 
     async opt_getDeckNames() {
         return this.target ? await this.target.getDeckNames() : null;

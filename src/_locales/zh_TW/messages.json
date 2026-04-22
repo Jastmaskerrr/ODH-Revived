@@ -84,6 +84,8 @@
     "baCurrentDict": { "message": "詞典名稱" },
     "baDeckname": { "message": "牌組名稱" },
     "baTags": { "message": "筆記標籤" },
+    "baRecentCards": { "message": "最近新增" },
+    "msgNoRecentCards": { "message": "暫無新增記錄" },
 
     "general_Makenotes": { "message": "通用筆記摘錄腳本" },
     "builtin_encn_Collins": { "message": "柯林斯英漢詞典(內置)" },

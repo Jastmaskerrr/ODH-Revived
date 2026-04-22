@@ -258,12 +258,17 @@ function matchesSourceLanguage(text, sourceLang) {
 /**
  * Extract source language code from dictionary name
  * e.g. 'encn_Cambridge' → 'en', 'builtin_encn_Collins' → 'en'
+ * Only recognizes standard bilingual naming: {src}{tgt}_ where both are known language codes.
+ * Returns null for non-standard names (e.g. 'general_Makenotes', 'envy_notes')
  */
 function parseDictSourceLanguage(dictName) {
     if (!dictName) return null;
     const name = dictName.startsWith('builtin_') ? dictName.slice(8) : dictName;
-    const match = name.match(/^([a-z]{2})[a-z]{2}_/);
-    return match ? match[1] : null;
+    const match = name.match(/^([a-z]{2})([a-z]{2})_/);
+    if (!match) return null;
+    const [, src, tgt] = match;
+    const KNOWN_LANGS = new Set(['en', 'fr', 'es', 'de', 'it', 'cn', 'ru']);
+    return (KNOWN_LANGS.has(src) && KNOWN_LANGS.has(tgt)) ? src : null;
 }
 
 /**
