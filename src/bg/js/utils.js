@@ -33,6 +33,8 @@ function sanitizeOptions(options) {
         dictSelected: '',
         dictNamelist: [],
 
+        offlineQueue: false, // 离线队列开关，默认关闭（仅 ankiconnect）
+
         siteRules: {}, // 网站规则：域名 -> 局部覆盖配置
     };
 

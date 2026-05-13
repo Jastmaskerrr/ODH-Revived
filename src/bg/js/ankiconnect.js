@@ -49,8 +49,12 @@ class Ankiconnect {
         if (!note) return { success: false, duplicate: false };
         try {
             let result = await this.ankiInvoke('addNote', { note });
+            if (result === null) {
+                throw new Error('network_error');
+            }
             return { success: true, noteId: result, duplicate: false };
         } catch (err) {
+            if (err.message === 'network_error') throw err;
             const errStr = String(err).toLowerCase();
             const isDuplicate = errStr.includes('duplicate');
             return { success: false, noteId: null, duplicate: isDuplicate, error: String(err) };

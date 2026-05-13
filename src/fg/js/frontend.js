@@ -231,12 +231,20 @@ class ODHFront {
             const tags = this.options ? this.options.tags : '';
 
             if (success) {
-                let msg = '✅ 已添加「' + word + '」→ 牌组: ' + deck;
-                if (tags) msg += ' | 标签: ' + tags;
-                if (response.existingCount > 0) {
-                    msg += ' (💡提示：Anki 中另有 ' + response.existingCount + ' 张同名卡片)';
+                if (response.offline) {
+                    // 离线保存成功
+                    let msg = '📦 已离线保存「' + word + '」（当前共 ' + response.offlineCount + ' 张待上传）';
+                    showToast(msg, 'success');
+                } else {
+                    let msg = '✅ 已添加「' + word + '」→ 牌组: ' + deck;
+                    if (tags) msg += ' | 标签: ' + tags;
+                    if (response.existingCount > 0) {
+                        msg += ' (💡提示：Anki 中另有 ' + response.existingCount + ' 张同名卡片)';
+                    }
+                    showToast(msg, 'success');
                 }
-                showToast(msg, 'success');
+            } else if (response && response.error === 'offline_queue_full') {
+                showToast('❌ 离线队列已满（500/500），请先上传', 'error');
             } else if (duplicate) {
                 showToast('⚠️ 「' + word + '」卡片已存在，跳过重复添加', 'warning');
             } else {
@@ -303,8 +311,8 @@ class ODHFront {
         let services = this.options ? this.options.services : '';
         let image = '';
         let imageclass = '';
-        if (services != 'none') {
-            image = (services == 'ankiconnect') ? 'plus.png' : 'cloud.png';
+        if (services != 'none' || (services == 'none' && this.options.offlineQueue)) {
+            image = (services == 'ankiweb') ? 'cloud.png' : 'plus.png';
             imageclass = await isConnected() ? 'class="odh-addnote"' : 'class="odh-addnote-disabled"';
         }
 
@@ -325,7 +333,7 @@ class ODHFront {
                     <span class="odh-extra">${note.extrainfo}</span>
                 </div>`;
             for (const [dindex, definition] of note.definitions.entries()) {
-                let button = (services == 'none' || services == '') ? '' : `<img ${imageclass} data-nindex="${nindex}" data-dindex="${dindex}" src="${chrome.runtime.getURL('fg/img/'+ image)}" />`;
+                let button = ((services == 'none' && !this.options.offlineQueue) || services == '') ? '' : `<img ${imageclass} data-nindex="${nindex}" data-dindex="${dindex}" src="${chrome.runtime.getURL('fg/img/'+ image)}" />`;
                 content += `<div class="odh-definition">${button}${definition}</div>`;
             }
             content += '</div>';

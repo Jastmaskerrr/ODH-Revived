@@ -16,6 +16,7 @@
             <a href="#" data-contentid="tab-1" class="tabmenu active" data-i18n="tabExtensionTitle">General</a>
             <a href="#" data-contentid="tab-2" class="tabmenu" data-i18n="tabServicesTitle">Anki</a>
             <a href="#" data-contentid="tab-4" class="tabmenu" data-i18n="tabSiteRulesTitle">Site Rules</a>
+            <a href="#" data-contentid="tab-5" class="tabmenu" data-i18n="tabOfflineQueueTitle">Offline Queue</a>
             <!--<a href="#" data-contentid="tab-3" class="tabmenu hidden" data-i18n="tabScriptsTitle">Scripts</a>-->
         </div>
 
@@ -83,6 +84,11 @@
                         <div class="enabled">
                             <input type="checkbox" value=true id="showtoast">
                             <label for="showtoast"></label>
+                        </div>
+                        <label data-i18n="lblOfflineQueue">Offline Queue</label>
+                        <div class="enabled">
+                            <input type="checkbox" value=true id="offlinequeue">
+                            <label for="offlinequeue"></label>
                         </div>
                     </div>
                     <div class="rightpanel">
@@ -304,6 +310,33 @@
                     </div>
                     <div class="crosspanel" style="text-align: right; margin-top: 10px;">
                         <label class="button" id="btn-save-rule" data-i18n="btnSaveRule">Save</label>
+                    </div>
+                </div>
+            </div>
+            <div id="tab-5" class="tabcontent" style="display:none">
+                <div class="grouppanel">
+                    <div class="grouptitle">
+                        <span data-i18n="grpOfflineQueue">Offline Queue</span>
+                        <span class="option-helps">
+                            <span id="offline-count-badge">0 cards</span>
+                        </span>
+                    </div>
+                    <div class="crosspanel" style="padding: 8px 10px;">
+                        <label class="button" id="btn-upload-all-offline" data-i18n="btnUploadAll">Upload All</label>
+                        <label class="button btn-danger" id="btn-delete-all-offline" data-i18n="btnDeleteAll">Clear All</label>
+                        <span id="offline-manage-status" style="margin-left:8px; font-size:11px;"></span>
+                    </div>
+                </div>
+                <div class="grouppanel">
+                    <div id="offline-cards-list" class="crosspanel" style="padding: 6px;">
+                        <!-- 动态渲染 -->
+                    </div>
+                </div>
+                <div class="grouppanel">
+                    <div class="crosspanel" style="padding: 5px 10px;">
+                        <input type="file" id="import-offline-file" accept=".json" style="display:none;">
+                        <label class="button" id="btn-import-offline" data-i18n="btnImportRules">Import</label>
+                        <label class="button" id="btn-export-offline" data-i18n="btnExportRules">Export</label>
                     </div>
                 </div>
             </div>

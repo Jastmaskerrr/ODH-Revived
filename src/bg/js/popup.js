@@ -18,22 +18,34 @@ async function updateAnkiStatus(options) {
     let version = await odhback().opt_getVersion();
     if (version === null) {
         $('.anki-options').hide();
-        $('.recent-cards-panel').hide();
+        if (options.services === 'none' && options.offlineQueue) {
+            loadRecentOfflineCards();
+        } else {
+            $('.recent-cards-panel').hide();
+        }
     } else {
         populateAnkiDeckAndModel(options);
         $('.anki-options').show();
         if (options.services === 'ankiconnect') {
             loadRecentCards();
+        } else {
+            $('.recent-cards-panel').hide();
         }
     }
 }
 
-async function loadRecentCards() {
-    let cards = await odhback().opt_getRecentCards();
-    renderRecentCards(cards || []);
+async function loadRecentOfflineCards() {
+    let cards = await odhback().opt_getOfflineCards();
+    cards.sort((a, b) => b.timestamp - a.timestamp);
+    renderRecentCards(cards || [], true);
 }
 
-function renderRecentCards(cards) {
+async function loadRecentCards() {
+    let cards = await odhback().opt_getRecentCards();
+    renderRecentCards(cards || [], false);
+}
+
+function renderRecentCards(cards, isOffline) {
     const list = $('#recent-cards-list');
     list.empty();
 
@@ -46,12 +58,31 @@ function renderRecentCards(cards) {
             const item = $('<div class="recent-card-item"></div>');
             item.append($('<span class="recent-card-word"></span>').text(card.expression));
             const btn = $('<button class="recent-card-delete" title="Delete">×</button>');
-            btn.on('click', () => deleteCard(card.noteId, item));
+            if (isOffline) {
+                btn.on('click', () => deleteOfflineCard(card.id, item));
+            } else {
+                btn.on('click', () => deleteCard(card.noteId, item));
+            }
             item.append(btn);
             list.append(item);
         });
     }
     $('.recent-cards-panel').show();
+}
+
+async function deleteOfflineCard(id, itemEl) {
+    itemEl.find('.recent-card-delete').prop('disabled', true).css('opacity', '0.3');
+    try {
+        await odhback().opt_deleteOfflineCard(id);
+        let cards = await odhback().opt_getOfflineCards();
+        cards.sort((a, b) => b.timestamp - a.timestamp);
+        itemEl.fadeOut(200, () => {
+            renderRecentCards(cards || [], true);
+            loadOfflineStatus(); // 更新下方离线队列总数面板
+        });
+    } catch (err) {
+        itemEl.find('.recent-card-delete').prop('disabled', false).css('opacity', '0.6');
+    }
 }
 
 async function deleteCard(noteId, itemEl) {
@@ -61,7 +92,7 @@ async function deleteCard(noteId, itemEl) {
         // 先获取新数据，再做动画，避免异步间隙导致闪烁
         let cards = await odhback().opt_getRecentCards();
         itemEl.fadeOut(200, () => {
-            renderRecentCards(cards || []);
+            renderRecentCards(cards || [], false);
         });
     } catch (err) {
         itemEl.find('.recent-card-delete').prop('disabled', false).css('opacity', '0.6');
@@ -144,7 +175,47 @@ async function onReady() {
 
         $('.anki-options').hide();
         updateAnkiStatus(options);
+        loadOfflineStatus();
     });
 }
 
+// --- Offline Queue ---
+async function loadOfflineStatus() {
+    try {
+        let count = await odhback().opt_getOfflineCardCount();
+        if (count > 0) {
+            $('#offline-cards-title').text('📦 ' + count + ' 张离线卡片');
+            $('.offline-cards-panel').show();
+        } else {
+            $('.offline-cards-panel').hide();
+        }
+    } catch (e) {
+        $('.offline-cards-panel').hide();
+    }
+}
+
+async function onUploadOfflineClicked(e) {
+    e.preventDefault();
+    let btn = $('#btn-upload-offline');
+    btn.text('上传中…').css('opacity', '0.5').off('click');
+    $('#offline-upload-status').text('');
+
+    try {
+        let result = await odhback().opt_uploadOfflineCards();
+        if (result.error === 'not_connected') {
+            $('#offline-upload-status').text('❌ AnkiConnect 未连接');
+        } else {
+            $('#offline-upload-status').text('✅ 成功 ' + result.uploaded + ' 张，失败 ' + result.failed + ' 张');
+        }
+    } catch (err) {
+        $('#offline-upload-status').text('❌ 上传出错');
+    }
+
+    btn.text('上传').css('opacity', '1').click(onUploadOfflineClicked);
+    loadOfflineStatus();
+}
+
 $(document).ready(utilAsync(onReady));
+$(document).ready(function() {
+    $(document).on('click', '#btn-upload-offline', onUploadOfflineClicked);
+});

@@ -178,6 +178,7 @@ async function onSaveClicked(e) {
     options.maxexample = $('#maxexample').val();
     options.maxwords = $('#maxwords').val();
     options.showtoast = $('#showtoast').prop('checked');
+    options.offlineQueue = $('#offlinequeue').prop('checked');
 
     options.services = $('#services').val();
     options.id = $('#id').val();
@@ -415,6 +416,7 @@ async function onReady() {
     $('#maxexample').val(options.maxexample);
     $('#maxwords').val(options.maxwords);
     $('#showtoast').prop('checked', options.showtoast !== false);
+    $('#offlinequeue').prop('checked', options.offlineQueue || false);
 
     $('#services').val(options.services);
     $('#id').val(options.id);
@@ -457,6 +459,171 @@ async function onReady() {
     $('#btn-export-rules').click(onExportRulesClicked);
     $('#btn-import-rules').click(onImportRulesClicked);
     $('#import-rules-file').change(onImportRulesFileChanged);
+
+    // Init Offline Queue
+    populateOfflineCards();
+    $('#btn-upload-all-offline').click(onUploadAllOfflineClicked);
+    $('#btn-delete-all-offline').click(onDeleteAllOfflineClicked);
+    $('#btn-export-offline').click(onExportOfflineCardsClicked);
+    $('#btn-import-offline').click(onImportOfflineCardsClicked);
+    $('#import-offline-file').change(onImportOfflineFileChanged);
 }
 
 $(document).ready(utilAsync(onReady));
+
+/* Offline Queue Logic */
+async function populateOfflineCards() {
+    let cards = [];
+    try {
+        cards = await odhback().opt_getOfflineCards();
+    } catch (e) {
+        cards = [];
+    }
+    $('#offline-count-badge').text(cards.length + ' cards');
+    $('#offline-cards-list').empty();
+
+    if (cards.length === 0) {
+        $('#offline-cards-list').append(
+            `<div style="text-align:center; color:#777; padding: 20px; background: white; border: 1px solid #d5d5d5; border-radius: 4px; margin: 5px 0;" data-i18n="msgNoOfflineCards">No offline cards.</div>`
+        );
+        localizeHtmlPage();
+        return;
+    }
+
+    cards.forEach(card => {
+        let time = new Date(card.timestamp).toLocaleString();
+        let detailRows = '';
+        // Model name
+        if (card.note && card.note.modelName) {
+            detailRows += `<tr><td>Model</td><td>${card.note.modelName}</td></tr>`;
+        }
+        // Fields
+        if (card.note && card.note.fields) {
+            for (const key in card.note.fields) {
+                let val = card.note.fields[key] || '';
+                // 截断过长内容
+                let display = val.length > 200 ? val.substring(0, 200) + '...' : val;
+                detailRows += `<tr><td>${key}</td><td>${display}</td></tr>`;
+            }
+        }
+        // Tags
+        if (card.note && card.note.tags && card.note.tags.length > 0) {
+            detailRows += `<tr><td>Tags</td><td>${card.note.tags.join(', ')}</td></tr>`;
+        }
+
+        let item = $(`
+            <div class="offline-card-item" data-id="${card.id}">
+                <div class="offline-card-summary">
+                    <span class="offline-card-word">${card.expression || '(unknown)'}</span>
+                    <span class="offline-card-deck">→ ${card.deckName || ''}</span>
+                    <span class="offline-card-time">${time}</span>
+                    <div class="offline-card-actions">
+                        <a class="btn-delete-offline-single" data-id="${card.id}">${chrome.i18n.getMessage('btnDelete') || 'Delete'}</a>
+                    </div>
+                </div>
+                <div class="offline-card-detail" style="display:none;">
+                    <table class="offline-detail-table">${detailRows}</table>
+                </div>
+            </div>
+        `);
+        $('#offline-cards-list').append(item);
+    });
+
+    // 展开/折叠
+    $('.offline-card-summary').click(function (e) {
+        if ($(e.target).hasClass('btn-delete-offline-single')) return;
+        $(this).siblings('.offline-card-detail').slideToggle(200);
+    });
+
+    // 单条删除
+    $('.btn-delete-offline-single').click(async function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        let id = $(this).data('id');
+        if (confirm('Delete this offline card?')) {
+            await odhback().opt_deleteOfflineCard(id);
+            populateOfflineCards();
+        }
+    });
+}
+
+async function onUploadAllOfflineClicked(e) {
+    e.preventDefault();
+    $('#btn-upload-all-offline').css('opacity', '0.5');
+    $('#offline-manage-status').text(chrome.i18n.getMessage('msgUploading') || 'Uploading...');
+
+    try {
+        let result = await odhback().opt_uploadOfflineCards();
+        if (result.error === 'not_connected') {
+            $('#offline-manage-status').text('❌ AnkiConnect not connected');
+        } else {
+            $('#offline-manage-status').text('✅ ' + result.uploaded + ' uploaded, ' + result.failed + ' failed');
+        }
+    } catch (err) {
+        $('#offline-manage-status').text('❌ Upload error');
+    }
+
+    $('#btn-upload-all-offline').css('opacity', '1');
+    populateOfflineCards();
+}
+
+async function onDeleteAllOfflineClicked(e) {
+    e.preventDefault();
+    let cards = await odhback().opt_getOfflineCards();
+    if (cards.length === 0) return;
+    if (confirm('Clear all ' + cards.length + ' offline cards?')) {
+        await odhback().opt_clearOfflineCards();
+        $('#offline-manage-status').text('');
+        populateOfflineCards();
+    }
+}
+
+async function onExportOfflineCardsClicked(e) {
+    e.preventDefault();
+    let cards = await odhback().opt_getOfflineCards();
+    if (cards.length === 0) {
+        alert('No offline cards to export.');
+        return;
+    }
+    const json = JSON.stringify(cards, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'odh-offline-cards.json';
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+function onImportOfflineCardsClicked(e) {
+    e.preventDefault();
+    $('#import-offline-file').click();
+}
+
+async function onImportOfflineFileChanged(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async function (ev) {
+        try {
+            const imported = JSON.parse(ev.target.result);
+            if (!Array.isArray(imported)) {
+                alert('Invalid format: expected a JSON array.');
+                return;
+            }
+
+            let result = await odhback().opt_importOfflineCards(imported);
+            if (result.success) {
+                populateOfflineCards();
+            } else {
+                alert('Failed to import: ' + result.error);
+            }
+        } catch (err) {
+            alert('Failed to parse JSON file: ' + err.message);
+        }
+    };
+    reader.readAsText(file);
+    // 重置 input 以便能再次选同一文件
+    $(e.target).val('');
+}

@@ -130,3 +130,18 @@ hr {
     font-size: 11px;
     text-align: center;
 }
+
+/* Offline Queue Panel */
+.offline-cards-panel .grouptitle {
+    background-color: #e67e22;
+}
+
+.offline-cards-panel .button {
+    background-color: #e67e22;
+    width: 70px;
+    font-size: 11px;
+}
+
+.offline-cards-panel .button:hover {
+    background-color: #d35400;
+}

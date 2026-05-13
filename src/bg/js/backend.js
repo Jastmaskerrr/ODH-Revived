@@ -226,7 +226,13 @@ class ODHBack {
     // front end message handler
     async api_isConnected(params) {
         let callback = params.callback;
-        callback(await this.opt_getVersion());
+        let version = await this.opt_getVersion();
+        // 离线队列开启时，即使未连接（或 services 为 none）也允许添加按钮可用
+        if (!version && this.options.offlineQueue && (this.options.services === 'ankiconnect' || this.options.services === 'none')) {
+            callback('offline-queue');
+            return;
+        }
+        callback(version);
     }
 
     async api_getTranslation(params) {
@@ -268,6 +274,11 @@ class ODHBack {
         }
         const note = this.formatNote(notedef, effectiveOptions);
         try {
+            if (!this.target) {
+                if (effectiveOptions.services === 'none' && this.options.offlineQueue) {
+                    throw new Error('network_error'); // Force offline queue fallback
+                }
+            }
             let result = await this.target.addNote(note);
             // result is now {success, duplicate, noteId?, error?}
             if (result && result.success && result.noteId && effectiveOptions.services === 'ankiconnect') {
@@ -280,6 +291,22 @@ class ODHBack {
             }
             callback(result);
         } catch (err) {
+            // --- 离线队列降级 ---
+            if (this.options.offlineQueue && (effectiveOptions.services === 'ankiconnect' || effectiveOptions.services === 'none') && note) {
+                let saveResult = await this._saveOfflineCard(
+                    notedef.expression || '',
+                    note.deckName || '',
+                    note
+                );
+                if (saveResult.saved) {
+                    callback({ success: true, offline: true, offlineCount: saveResult.count });
+                    return;
+                } else {
+                    callback({ success: false, duplicate: false, error: 'offline_queue_full' });
+                    return;
+                }
+            }
+            // --- 原有逻辑 ---
             console.error(err);
             callback({ success: false, duplicate: false, error: String(err) });
         }
@@ -390,6 +417,115 @@ class ODHBack {
 
     async opt_getVersion() {
         return this.target ? await this.target.getVersion() : null;
+    }
+
+    // --- Offline Queue ---
+    async _saveOfflineCard(expression, deckName, note) {
+        const data = await new Promise(r => chrome.storage.local.get('offlineCards', r));
+        let cards = data.offlineCards || [];
+        if (cards.length >= 500) {
+            return { saved: false, reason: 'full', count: cards.length };
+        }
+        const id = Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+        cards.push({ id, expression, deckName, note, timestamp: Date.now() });
+        await new Promise(r => chrome.storage.local.set({ offlineCards: cards }, r));
+        return { saved: true, count: cards.length };
+    }
+
+    async _getOfflineCards() {
+        const data = await new Promise(r => chrome.storage.local.get('offlineCards', r));
+        return data.offlineCards || [];
+    }
+
+    async _removeOfflineCards(ids) {
+        const data = await new Promise(r => chrome.storage.local.get('offlineCards', r));
+        let cards = (data.offlineCards || []).filter(c => !ids.includes(c.id));
+        await new Promise(r => chrome.storage.local.set({ offlineCards: cards }, r));
+    }
+
+    async _getOfflineCardCount() {
+        const cards = await this._getOfflineCards();
+        return cards.length;
+    }
+
+    async opt_getOfflineCards() {
+        return await this._getOfflineCards();
+    }
+
+    async opt_getOfflineCardCount() {
+        return await this._getOfflineCardCount();
+    }
+
+    async opt_deleteOfflineCard(id) {
+        await this._removeOfflineCards([id]);
+    }
+
+    async opt_clearOfflineCards() {
+        await new Promise(r => chrome.storage.local.set({ offlineCards: [] }, r));
+    }
+
+    async opt_importOfflineCards(newCards) {
+        if (!Array.isArray(newCards)) return { success: false, error: 'Invalid format' };
+        const data = await new Promise(r => chrome.storage.local.get('offlineCards', r));
+        let cards = data.offlineCards || [];
+        // Optional: filter out invalid cards if needed, but for now just merge
+        // Also limit to 500 to prevent quota issues
+        cards = cards.concat(newCards).slice(0, 500);
+        await new Promise(r => chrome.storage.local.set({ offlineCards: cards }, r));
+        return { success: true, count: cards.length };
+    }
+
+    async opt_uploadOfflineCards() {
+        // 1. 检查 AnkiConnect 连接
+        let version = await this.ankiconnect.getVersion();
+        if (!version) {
+            return { uploaded: 0, failed: 0, error: 'not_connected' };
+        }
+
+        // 2. 读取全部离线卡片
+        let cards = await this._getOfflineCards();
+        if (cards.length === 0) {
+            return { uploaded: 0, failed: 0 };
+        }
+
+        // 3. 构建 multi 请求
+        let actions = cards.map(card => ({
+            action: 'addNote',
+            version: this.ankiconnect.version,
+            params: { note: card.note }
+        }));
+
+        // 4. 批量上传
+        let results;
+        try {
+            results = await this.ankiconnect.ankiInvoke('multi', { actions });
+        } catch (err) {
+            return { uploaded: 0, failed: cards.length, error: String(err) };
+        }
+
+        // 5. 逐条判断结果
+        if (!results || !Array.isArray(results)) {
+            return { uploaded: 0, failed: cards.length, error: 'invalid_response' };
+        }
+
+        let successIds = [];
+        let failCount = 0;
+        for (let i = 0; i < cards.length; i++) {
+            const r = results[i];
+            // multi 返回每个 action 的 {result, error}
+            if (r && r.result !== null && r.result !== undefined && !r.error) {
+                successIds.push(cards[i].id);
+            } else {
+                failCount++;
+            }
+        }
+
+        // 6. 删除成功的卡片
+        if (successIds.length > 0) {
+            await this._removeOfflineCards(successIds);
+        }
+
+        return { uploaded: successIds.length, failed: failCount };
     }
 
     // Sandbox communication start here
